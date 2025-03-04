@@ -9,31 +9,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type dbClient struct {
-	dbName string
-	writer *mongo.Client
-	reader *mongo.Client
-}
+type (
+	connection struct {
+		dbName string
+		writer *mongo.Client
+		reader *mongo.Client
+	}
+	Connection interface {
+	}
+)
 
-var dbPool = make(map[string]*dbClient)
+var dbPool = make(map[string]*connection)
 
 func Connect(alias, dbName, connString string) error {
-	// cfg := struct {
-	// 	Config config `json:"database"`
-	// }{}
-	// // Read config
-	// if err := app.GetConfig(&cfg); err != nil {
-	// 	app.LogWith(
-	// 		"Error", err,
-	// 	).Fatal("Read Database config")
-	// }
-
-	// app.LogWith("Config", cfg.Config).Debug("Database config")
-
-	// app.LogInfo("Connecting to database...")
-	// connString := cfg.Config.ConnectionString
-	// dbName = cfg.Config.Name
-
 	if connString == "" || dbName == "" || alias == "" {
 		return errors.New("empty one of connections param")
 	}
@@ -64,7 +52,7 @@ func Connect(alias, dbName, connString string) error {
 		}
 	}
 
-	dbPool[alias] = &dbClient{
+	dbPool[alias] = &connection{
 		dbName: dbName,
 		writer: writer,
 		reader: reader,
@@ -81,4 +69,12 @@ func Disconnect(alias string) {
 	_ = client.writer.Disconnect(context.Background())
 	_ = client.reader.Disconnect(context.Background())
 	delete(dbPool, alias)
+}
+
+func GetConnection(alias string) Connection {
+	client, ok := dbPool[alias]
+	if !ok {
+		return nil
+	}
+	return client
 }
