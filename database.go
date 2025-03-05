@@ -9,16 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type (
-	connection struct {
-		dbName string
-		writer *mongo.Client
-		reader *mongo.Client
-	}
-	Connection interface {
-	}
-)
-
 var dbPool = make(map[string]*connection)
 
 func Connect(alias, dbName, connString string) error {
@@ -53,9 +43,9 @@ func Connect(alias, dbName, connString string) error {
 	}
 
 	dbPool[alias] = &connection{
-		dbName: dbName,
-		writer: writer,
-		reader: reader,
+		dbName:          dbName,
+		primaryClient:   writer,
+		secondaryClient: reader,
 	}
 
 	return nil
@@ -66,8 +56,8 @@ func Disconnect(alias string) {
 	if !ok {
 		return
 	}
-	_ = client.writer.Disconnect(context.Background())
-	_ = client.reader.Disconnect(context.Background())
+	_ = client.primaryClient.Disconnect(context.Background())
+	_ = client.secondaryClient.Disconnect(context.Background())
 	delete(dbPool, alias)
 }
 
