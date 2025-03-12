@@ -9,7 +9,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var dbPool = make(map[string]*connection)
+var (
+	dbPool                = make(map[string]*connection)
+	ErrConnectionNotFound = errors.New("connection not found")
+)
 
 func Connect(alias, dbName, connString string) error {
 	if connString == "" || dbName == "" || alias == "" {
@@ -61,10 +64,10 @@ func Disconnect(alias string) {
 	delete(dbPool, alias)
 }
 
-func GetConnection(alias string) Connection {
+func GetConnection(alias string) (Connection, error) {
 	client, ok := dbPool[alias]
 	if !ok {
-		return nil
+		return nil, ErrConnectionNotFound
 	}
-	return client
+	return client, nil
 }
