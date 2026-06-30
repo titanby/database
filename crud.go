@@ -1,5 +1,13 @@
 package database
 
+import (
+	"context"
+	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
 // func updateOne(collection *mongo.Collection, filter, update interface{}) error {
 // 	_, err := collection.UpdateOne(Ctx(), filter, update, options.Update().SetUpsert(true))
 // 	if err != nil {
@@ -147,47 +155,22 @@ package database
 // func FindOneWithOptions(collectionName string, filter, result interface{}, opts *options.FindOneOptions) error {
 // 	return findOneWithOptions(Collection(collectionName), filter, result, opts)
 // }
-//
-// func find(collection *mongo.Collection, filter, sortBy interface{}, limit int64, result interface{}) error {
-// 	cur, err := collection.Find(Ctx(), filter, options.Find().SetSort(sortBy).SetLimit(limit))
-// 	if err != nil {
-// 		app.LogWith(
-// 			"Error", err,
-// 			"Filter", filter,
-// 			"Collection", collection.Name(),
-// 		).Error("Error getting data")
-// 		return err
-// 	}
-// 	defer cur.Close(Ctx())
-//
-// 	if err = cur.All(Ctx(), result); err != nil {
-// 		app.LogWith(
-// 			"Error", err,
-// 			"Filter", filter,
-// 			"Collection", collection.Name(),
-// 		).Error("Error getting data")
-// 		return err
-// 	}
-// 	return nil
-// }
-//
-// func FindInSecondary(collectionName string, filter, sortBy interface{}, limit int64, result interface{}) error {
-// 	return find(SecondaryCollection(collectionName), filter, sortBy, limit, result)
-// }
-//
-// func Find(collectionName string, filter, sortBy interface{}, limit int64, result interface{}) error {
-// 	return find(Collection(collectionName), filter, sortBy, limit, result)
-// }
-//
-// func GetLastDocument(name string, field string, res interface{}) error {
-// 	opts := options.FindOne().SetSort(bson.M{field: -1})
-// 	err := Collection(name).FindOne(Ctx(), bson.M{}, opts).Decode(res)
-// 	if err != nil {
-// 		app.LogWith(
-// 			"Error", err,
-// 			"Collection", name,
-// 			"Field", field,
-// 		).Error("Error getting last document")
-// 	}
-// 	return err
-// }
+
+func Find(ctx context.Context, collection *mongo.Collection, filter, sortBy interface{}, limit int64, result interface{}) error {
+	ctx = dbContext(ctx)
+	cur, err := collection.Find(ctx, filter, options.Find().SetSort(sortBy).SetLimit(limit))
+	if err != nil {
+		return err
+	}
+	defer cur.Close(ctx)
+
+	if err = cur.All(ctx, result); err != nil {
+		return err
+	}
+	return nil
+}
+
+func dbContext(ctx context.Context) context.Context {
+	res, _ := context.WithTimeout(ctx, 5*time.Second)
+	return res
+}
