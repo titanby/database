@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -70,4 +71,9 @@ func GetConnection(alias string) (Connection, error) {
 		return nil, ErrConnectionNotFound
 	}
 	return client, nil
+}
+
+func dbContext(ctx context.Context) context.Context {
+	res, _ := context.WithTimeout(ctx, 5*time.Second)
+	return res
 }
